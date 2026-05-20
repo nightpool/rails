@@ -179,6 +179,17 @@ class ParametersAccessorsTest < ActiveSupport::TestCase
     assert_not_predicate @params[:person].fetch(:name), :permitted?
   end
 
+  test "#fetch returns stable references for nested parameters" do
+    params = ActionController::Parameters.new(hello: { world: ["foo", "bar", ""] })
+
+    obj1 = params.fetch(:hello)
+    obj2 = params.fetch(:hello)
+    assert_same obj1, obj2
+
+    params.fetch(:hello).fetch(:world).delete_if(&:blank?)
+    assert_equal ["foo", "bar"], params.fetch(:hello).fetch(:world)
+  end
+
   test "fetch yields string key to block when missing" do
     key = @params.fetch("missing") { |missing_key| missing_key }
 
@@ -474,6 +485,17 @@ class ParametersAccessorsTest < ActiveSupport::TestCase
     assert_kind_of ActionController::Parameters, @params.dig(:person)
     assert_kind_of ActionController::Parameters, @params.dig(:person, :addresses, 0)
     assert @params.dig(:person, :addresses).all?(ActionController::Parameters)
+  end
+
+  test "#dig returns stable references for nested arrays" do
+    params = ActionController::Parameters.new(hello: { world: ["foo", "bar", ""] })
+
+    obj1 = params.dig(:hello, :world)
+    obj2 = params.dig(:hello, :world)
+    assert_same obj1, obj2
+
+    obj1.delete_if(&:blank?)
+    assert_equal ["foo", "bar"], params.dig(:hello, :world)
   end
 
   test "mutating #dig return value mutates underlying parameters" do
